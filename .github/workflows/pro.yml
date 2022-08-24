@@ -1,0 +1,39 @@
+---
+name: SFTP
+on:
+  push:
+    branches: [ main ]
+jobs:
+  Deploying_Code:
+    name: Deploying Code on Server
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v1
+    - name: Started Deploying Code on Server
+      env:
+        User: ${{ secrets.FTP_USERNAME }}
+        Pass: ${{ secrets.FTP_PASSWORD }}
+        Host: ${{ secrets.FTP_SERVER }}
+        Port: ${{ secrets.FTP_PORT }}
+      run: |
+        wget https://raw.githubusercontent.com/git-ftp/git-ftp/master/git-ftp && chmod +x git-ftp
+        git config git-ftp.user "$User" && git config git-ftp.password "$Pass"
+        git config git-ftp.url sftp://"$Host":"$Port"/home/ec2-user/pro
+        ./git-ftp init --insecure --syncroot .
+        echo "Deployed Code Successfully on BlazinSafety Production Server"
+  Command_Execution:
+    name: Executing Comamand on Server
+    runs-on: self-hosted
+    needs: Deploying_Code
+    steps:
+    - name: Establishing Connection to Server 
+      uses: appleboy/ssh-action@master
+      with:
+        Host: ${{ secrets.FTP_SERVER }}
+        User: ${{ secrets.FTP_USERNAME }}
+        Pass: ${{ secrets.FTP_PASSWORD }}
+        Port: ${{ secrets.FTP_PORT }}
+        script: |
+          cd /home/wpweb/public_html/ && echo "`date`" > testbl.txt
+          echo "Successfully Executed Command on BlazinSafety Production Server"
+...
